@@ -3,7 +3,7 @@ import argparse
 import os
 import sys
 
-def resolve_includes(bundle_name, bundle_path):
+def resolve_includes(bundle_name, bundle_path, bundles=False):
     """
     resolve_incudes returns a full package list of include-resolved packages in
     the bundle definition file or pundle declaration under bundle_path. Sources
@@ -31,10 +31,14 @@ def resolve_includes(bundle_name, bundle_path):
 
         if line.startswith("include("):
             inc_bundle = line[len("include("):].rsplit(")")[0]
-            packages = packages.union(resolve_includes(inc_bundle, bundle_path))
+            packages = packages.union(resolve_includes(inc_bundle, bundle_path, bundles))
+            if bundles:
+                packages.add(inc_bundle)
+
             continue
 
-        packages.add(line)
+        if not bundles:
+            packages.add(line)
 
     return packages
 
@@ -42,5 +46,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process bundle packages following includes')
     parser.add_argument('bundle_name', help='name of bundle to process')
     parser.add_argument('bundle_path', help='path to clr-bundles directory')
+    parser.add_argument('--bundles', default=False, action='store_true',
+                        help='Report only included bundle names')
     args = parser.parse_args()
-    print('\n'.join(sorted(resolve_includes(args.bundle_name, args.bundle_path))))
+    if args.bundles:
+        os_core_set = set(["os-core"])
+    else:
+        os_core_set = resolve_includes("os-core", args.bundle_path)
+
+    bundle_set = resolve_includes(args.bundle_name, args.bundle_path, bundles=args.bundles)
+    print('\n'.join(sorted(os_core_set.union(bundle_set))))
