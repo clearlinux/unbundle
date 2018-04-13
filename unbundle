@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import sys
+
+def resolve_includes(bundle_name, bundle_path):
+    """
+    resolve_incudes returns a full package list of include-resolved packages in
+    the bundle definition file or pundle declaration under bundle_path. Sources
+    for included bundles are other bundle definition files at
+    bundle_path/bundles/* and bundle_path/packages.
+    """
+    bundle_def = os.path.join(bundle_path, "bundles", bundle_name)
+    try:
+        with open(bundle_def, "r", encoding="latin-1") as bundlef:
+            lines = bundlef.readlines()
+    except FileNotFoundError:
+        # maybe this is a pundle
+        packages_f = os.path.join(bundle_path, "packages")
+        if not os.path.exists(packages_f):
+            # pundle definition file does not exist
+            return set()
+        # find name on its own line
+        return set([bundle_name]) if f"\n{bundle_name}\n" in open(packages_f, "r").read() else set()
+
+    packages = set()
+    for line in lines:
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+
+        if line.startswith("include("):
+            inc_bundle = line[len("include("):].rsplit(")")[0]
+            packages = packages.union(resolve_includes(inc_bundle, bundle_path))
+            continue
+
+        packages.add(line)
+
+    return packages
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Process bundle packages following includes')
+    parser.add_argument('bundle_name', help='name of bundle to process')
+    parser.add_argument('bundle_path', help='path to clr-bundles directory')
+    args = parser.parse_args()
+    print('\n'.join(sorted(resolve_includes(args.bundle_name, args.bundle_path))))
