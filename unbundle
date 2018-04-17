@@ -30,6 +30,9 @@ def resolve_includes(bundle_name, bundle_path, bundles=False):
         return set(), False
 
     packages = set()
+    if bundles:
+        packages.add(bundle_name)
+
     for line in lines:
         line = line.split("#", 1)[0].strip()
         if not line:
