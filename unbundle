@@ -23,8 +23,15 @@ def resolve_includes(bundle_name, bundle_path, bundles=False):
             return set(), False
 
         # find name on its own line
-        if f"\n{bundle_name}\n" in open(packages_f, "r").read():
-            return set([bundle_name]), True
+        with open(packages_f, "r") as pkgdef:
+            for line in pkgdef.readlines():
+                # ignore things after a comment '#'
+                c = line.find('#')
+                if c >= 0:
+                    line = line[:c]
+                line = line.strip()
+                if f"{bundle_name}" == line:
+                    return set([bundle_name]), True
 
         print(f"ERROR: could not find {bundle_name} bundle")
         return set(), False
