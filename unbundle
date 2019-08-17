@@ -45,8 +45,8 @@ def resolve_includes(bundle_name, bundle_path, bundles=False):
         if not line:
             continue
 
-        if line.startswith("include("):
-            inc_bundle = line[len("include("):].rsplit(")")[0]
+        if line.startswith("include(") or line.startswith("also-add("):
+            inc_bundle = line[line.find("(")+1:line.find(")")]
             try:
                 n_packages, success = resolve_includes(inc_bundle, bundle_path, bundles)
                 if not success:
