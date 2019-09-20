@@ -15,24 +15,6 @@ def resolve_includes(bundle_name, bundle_path, bundles=False):
         with open(bundle_def, "r", encoding="latin-1") as bundlef:
             lines = bundlef.readlines()
     except FileNotFoundError:
-        # maybe this is a pundle
-        packages_f = os.path.join(bundle_path, "packages")
-        if not os.path.exists(packages_f):
-            # pundle definition file does not exist
-            print(f"ERROR: could not find {bundle_name} bundle")
-            return set(), False
-
-        # find name on its own line
-        with open(packages_f, "r") as pkgdef:
-            for line in pkgdef.readlines():
-                # ignore things after a comment '#'
-                c = line.find('#')
-                if c >= 0:
-                    line = line[:c]
-                line = line.strip()
-                if f"{bundle_name}" == line:
-                    return set([bundle_name]), True
-
         print(f"ERROR: could not find {bundle_name} bundle")
         return set(), False
 
