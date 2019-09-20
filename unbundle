@@ -3,7 +3,7 @@ import argparse
 import os
 import sys
 
-def resolve_includes(bundle_name, bundle_path, bundles=False):
+def resolve_includes(bundle_name, bundle_path, content, bundles=False, path=set()):
     """
     resolve_incudes returns a full package list of include-resolved packages in
     the bundle definition file or pundle declaration under bundle_path. Sources
@@ -11,41 +11,39 @@ def resolve_includes(bundle_name, bundle_path, bundles=False):
     bundle_path/bundles/* and bundle_path/packages.
     """
     bundle_def = os.path.join(bundle_path, "bundles", bundle_name)
+    path.add(bundle_name)
     try:
         with open(bundle_def, "r", encoding="latin-1") as bundlef:
             lines = bundlef.readlines()
     except FileNotFoundError:
         print(f"ERROR: could not find {bundle_name} bundle")
-        return set(), False
+        return False
 
-    packages = set()
     if bundles:
-        packages.add(bundle_name)
+        content.add(bundle_name)
 
     for line in lines:
         line = line.split("#", 1)[0].strip()
         if not line:
             continue
-
-        if line.startswith("include("):
-            inc_bundle = line[line.find("(")+1:line.find(")")]
-            try:
-                n_packages, success = resolve_includes(inc_bundle, bundle_path, bundles)
-                if not success:
-                    return set(), False
-                packages = packages.union(n_packages)
-            except RecursionError:
-                print("ERROR: include loop found")
-                return set(), False
-            if bundles:
-                packages.add(inc_bundle)
-
+        elif line.startswith("also-add("):
             continue
+        elif line.startswith("include("):
+            inc_bundle = line[line.find("(")+1:line.find(")")]
+            if inc_bundle in path:
+                print(f"Error cycle detected: {inc_bundle} is part of a loop in bundles {path}.")
+                return False
+            success = resolve_includes(inc_bundle, bundle_path, content, bundles, path)
+            if not success:
+                return False
+            if bundles:
+                content.add(inc_bundle)
+            continue
+        elif not bundles:
+            content.add(line)
 
-        if not bundles:
-            packages.add(line)
-
-    return packages, True
+    path.remove(bundle_name)
+    return True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process bundle packages following includes')
@@ -55,16 +53,17 @@ if __name__ == "__main__":
                         help='Report only included bundle names')
     args = parser.parse_args()
     success = True
+    content = set()
     if args.bundles:
         os_core_set = set(["os-core"])
     else:
-        os_core_set, success = resolve_includes("os-core", args.bundle_path)
-
+        os_core_set = set()
+        success = resolve_includes("os-core", args.bundle_path, os_core_set)
     if not success:
         sys.exit(1)
 
-    bundle_set, success = resolve_includes(args.bundle_name, args.bundle_path, bundles=args.bundles)
+    success = resolve_includes(args.bundle_name, args.bundle_path, content, bundles=args.bundles)
     if not success:
         sys.exit(1)
 
-    print('\n'.join(sorted(os_core_set.union(bundle_set))))
+    print('\n'.join(sorted(os_core_set.union(content))))
