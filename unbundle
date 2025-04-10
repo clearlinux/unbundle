@@ -34,8 +34,7 @@ def resolve_includes(bundle_name, bundle_path, content, bundles=False, path=set(
         elif line.startswith("include("):
             inc_bundle = line[line.find("(")+1:line.find(")")]
             if inc_bundle in path:
-                print(f"Error cycle detected: {inc_bundle} is part of a loop in bundles {path}.")
-                return False
+                return True
             success = resolve_includes(inc_bundle, bundle_path, content, bundles, path)
             if not success:
                 return False
