@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import os
 import sys
@@ -47,7 +46,7 @@ def resolve_includes(bundle_name, bundle_path, content, bundles=False, path=set(
     path.remove(bundle_name)
     return True
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Process bundle packages following includes')
     parser.add_argument('bundle_name', help='name of bundle to process')
     parser.add_argument('bundle_path', help='path to clr-bundles directory')
@@ -69,3 +68,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print('\n'.join(sorted(os_core_set.union(content))))
+
+if __name__ == "__main__":
+    main()
