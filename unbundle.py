@@ -4,7 +4,7 @@ import sys
 
 
 def resolve_includes(bundle_name, bundle_path,
-                     content, bundles=False, seen=None):
+                     content, bundles=False, seen=None, search=''):
     """
     resolve_incudes returns a full package list of include-resolved packages in
     the bundle definition file or pundle declaration under bundle_path. Sources
@@ -36,9 +36,11 @@ def resolve_includes(bundle_name, bundle_path,
         if line.startswith("include("):
             inc_bundle = line[line.find("(")+1:line.find(")")]
             success = resolve_includes(inc_bundle, bundle_path,
-                                       content, bundles, seen)
+                                       content, bundles, seen, search)
             if not success:
                 return False
+            if search == inc_bundle:
+                print(f"{bundle_name} includes {search}")
             if bundles:
                 content.add(inc_bundle)
             continue
@@ -54,6 +56,8 @@ def main():
     parser.add_argument('bundle_path', help='path to clr-bundles directory')
     parser.add_argument('--bundles', default=False, action='store_true',
                         help='Report only included bundle names')
+    parser.add_argument('--search', default='',
+                        help='Display bundles processed that include this bundle')
     args = parser.parse_args()
     success = True
     content = set()
@@ -61,16 +65,17 @@ def main():
         os_core_set = set(["os-core"])
     else:
         os_core_set = set()
-        success = resolve_includes("os-core", args.bundle_path, os_core_set)
+        success = resolve_includes("os-core", args.bundle_path, os_core_set, search=args.search)
     if not success:
         sys.exit(1)
 
     success = resolve_includes(args.bundle_name, args.bundle_path, content,
-                               bundles=args.bundles)
+                               bundles=args.bundles, search=args.search)
     if not success:
         sys.exit(1)
 
-    print('\n'.join(sorted(os_core_set.union(content))))
+    if not args.search:
+        print('\n'.join(sorted(os_core_set.union(content))))
 
 
 if __name__ == "__main__":
